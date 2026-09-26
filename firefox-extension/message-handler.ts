@@ -5,6 +5,8 @@ import { hasCaptureConsent, markTabAsAwaitingConsent } from "./capture-consent";
 
 // Time to let a newly foregrounded tab paint before capturing it
 const TAB_PAINT_DELAY_MS = 250;
+// browser.tabs.Tab.groupId for a tab that does not belong to any group
+const TAB_GROUP_ID_NONE = -1;
 
 export class MessageHandler {
   private client: WebsocketClient;
@@ -133,10 +135,18 @@ export class MessageHandler {
 
   private async sendTabs(correlationId: string): Promise<void> {
     const tabs = await browser.tabs.query({});
+    const tabsWithGroupInfo = tabs.map((tab) => {
+      const rawGroupId = (tab as { groupId?: number }).groupId;
+      const groupId =
+        rawGroupId === undefined || rawGroupId === TAB_GROUP_ID_NONE
+          ? null
+          : rawGroupId;
+      return { ...tab, groupId };
+    });
     await this.client.sendResourceToServer({
       resource: "tabs",
       correlationId,
-      tabs,
+      tabs: tabsWithGroupInfo,
     });
   }
 

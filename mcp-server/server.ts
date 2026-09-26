@@ -78,7 +78,7 @@ mcpServer.tool(
       }
       return {
         type: "text" as const,
-        text: `tab id=${tab.id}, tab url=${tab.url}, tab title=${tab.title}, last accessed=${lastAccessed}`,
+        text: `tab id=${tab.id}, tab url=${tab.url}, tab title=${tab.title}, last accessed=${lastAccessed}, group id=${tab.groupId ?? "none"}, window id=${tab.windowId}`,
       };
     });
 

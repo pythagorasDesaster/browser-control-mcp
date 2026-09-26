@@ -231,14 +231,18 @@ describe("MessageHandler", () => {
     });
 
     describe("get-tab-list command", () => {
-      it("should get tabs and send them to the server", async () => {
+      it("should get tabs and send them to the server, normalizing groupId", async () => {
         // Arrange
         const request: ServerMessageRequest = {
           cmd: "get-tab-list",
           correlationId: "test-correlation-id",
         };
 
-        const mockTabs = [{ id: 123, url: "https://example.com" }];
+        const mockTabs = [
+          { id: 123, url: "https://example.com", windowId: 1, groupId: 5 },
+          { id: 456, url: "https://ungrouped.com", windowId: 1, groupId: -1 },
+          { id: 789, url: "https://legacy.com", windowId: 1 },
+        ];
         (browser.tabs.query as jest.Mock).mockResolvedValue(mockTabs);
 
         // Act
@@ -249,7 +253,11 @@ describe("MessageHandler", () => {
         expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
           resource: "tabs",
           correlationId: "test-correlation-id",
-          tabs: mockTabs,
+          tabs: [
+            { id: 123, url: "https://example.com", windowId: 1, groupId: 5 },
+            { id: 456, url: "https://ungrouped.com", windowId: 1, groupId: null },
+            { id: 789, url: "https://legacy.com", windowId: 1, groupId: null },
+          ],
         });
       });
     });
