@@ -54,7 +54,10 @@ declare namespace browser.tabGroups {
 declare namespace browser.tabs {
   interface GroupOptions {
     tabIds: number[];
+    groupId?: number;
   }
 
   function group(options: GroupOptions): Promise<number>;
+
+  function ungroup(tabIds: number | number[]): Promise<void>;
 }

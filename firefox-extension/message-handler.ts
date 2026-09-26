@@ -63,6 +63,12 @@ export class MessageHandler {
           req.groupTitle
         );
         break;
+      case "add-tabs-to-group":
+        await this.addTabsToGroup(req.correlationId, req.tabIds, req.groupId);
+        break;
+      case "ungroup-tabs":
+        await this.ungroupTabs(req.correlationId, req.tabIds);
+        break;
       case "capture-screenshot":
         await this.captureScreenshot(
           req.correlationId,
@@ -489,6 +495,58 @@ export class MessageHandler {
       resource: "new-tab-group",
       correlationId,
       groupId: tabGroup.id,
+    });
+  }
+
+  private async assertTabsExist(tabIds: number[]): Promise<void> {
+    const allTabs = await browser.tabs.query({});
+    const existingTabIds = new Set(allTabs.map((tab) => tab.id));
+    const missingTabIds = tabIds.filter((tabId) => !existingTabIds.has(tabId));
+    if (missingTabIds.length > 0) {
+      throw new Error(`Tab id(s) not found: ${missingTabIds.join(", ")}`);
+    }
+  }
+
+  private async assertGroupExists(groupId: number): Promise<void> {
+    const groups = await browser.tabGroups.query({});
+    if (!groups.some((group) => group.id === groupId)) {
+      throw new Error(
+        `Tab group ${groupId} does not exist. Use list-tab-groups to see available groups.`
+      );
+    }
+  }
+
+  private async addTabsToGroup(
+    correlationId: string,
+    tabIds: number[],
+    groupId: number
+  ): Promise<void> {
+    this.assertTabGroupsApiAvailable();
+    await this.assertGroupExists(groupId);
+    await this.assertTabsExist(tabIds);
+
+    await browser.tabs.group({ tabIds, groupId });
+
+    await this.client.sendResourceToServer({
+      resource: "tabs-added-to-group",
+      correlationId,
+      groupId,
+      tabIds,
+    });
+  }
+
+  private async ungroupTabs(
+    correlationId: string,
+    tabIds: number[]
+  ): Promise<void> {
+    this.assertTabGroupsApiAvailable();
+    await this.assertTabsExist(tabIds);
+
+    await browser.tabs.ungroup(tabIds);
+
+    await this.client.sendResourceToServer({
+      resource: "tabs-ungrouped",
+      correlationId,
     });
   }
 }

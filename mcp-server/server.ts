@@ -252,6 +252,38 @@ mcpServer.tool(
 );
 
 mcpServer.tool(
+  "add-tabs-to-group",
+  "Add existing browser tabs to an existing tab group, by tab IDs and groupId, without creating a new group or affecting other tabs already in the group. Use list-tab-groups first to find the groupId. To create a brand new group instead, use group-browser-tabs.",
+  {
+    tabIds: z.array(z.number()),
+    groupId: z.number(),
+  },
+  async ({ tabIds, groupId }) => {
+    await browserApi.addTabsToGroup(tabIds, groupId);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Added ${tabIds.length} tab(s) to group ${groupId}`,
+        },
+      ],
+    };
+  }
+);
+
+mcpServer.tool(
+  "ungroup-tabs",
+  "Remove the given browser tabs from whatever tab group they belong to, leaving them ungrouped. Does not close the tabs.",
+  { tabIds: z.array(z.number()) },
+  async ({ tabIds }) => {
+    await browserApi.ungroupTabs(tabIds);
+    return {
+      content: [{ type: "text", text: `Ungrouped ${tabIds.length} tab(s)` }],
+    };
+  }
+);
+
+mcpServer.tool(
   "capture-tab-screenshot",
   `
     Capture a screenshot of the visible area of a browser tab, by tab ID.

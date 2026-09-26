@@ -197,6 +197,23 @@ export class BrowserAPI {
     return message.groupId;
   }
 
+  async addTabsToGroup(tabIds: number[], groupId: number): Promise<void> {
+    const correlationId = this.sendMessageToExtension({
+      cmd: "add-tabs-to-group",
+      tabIds,
+      groupId,
+    });
+    await this.waitForResponse(correlationId, "tabs-added-to-group");
+  }
+
+  async ungroupTabs(tabIds: number[]): Promise<void> {
+    const correlationId = this.sendMessageToExtension({
+      cmd: "ungroup-tabs",
+      tabIds,
+    });
+    await this.waitForResponse(correlationId, "tabs-ungrouped");
+  }
+
   async captureScreenshot(
     tabId: number,
     format: "jpeg" | "png",

@@ -84,6 +84,14 @@
             "description": "Group browser tabs into a new tab group"
         },
         {
+            "name": "add-tabs-to-group",
+            "description": "Add existing browser tabs to an existing tab group"
+        },
+        {
+            "name": "ungroup-tabs",
+            "description": "Remove browser tabs from their tab group"
+        },
+        {
             "name": "find-highlight-in-browser-tab",
             "description": "Find and highlight text in a browser tab"
         },
