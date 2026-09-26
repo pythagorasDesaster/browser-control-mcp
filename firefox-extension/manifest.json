@@ -1,8 +1,8 @@
 {
     "manifest_version": 2,
-    "name": "Browser Control MCP",
-    "version": "1.5.2.1",
-    "description": "An extension that allows a local MCP server to perform actions on the browser.",
+    "name": "Browser Control MCP (UNOFFICIAL FORK)",
+    "version": "1.5.2.2",
+    "description": "UNOFFICIAL FORK - adds tab group management (list, add, ungroup, rename, move). Lets a local MCP server control the browser.",
     "permissions": [
         "tabs",
         "tabGroups",
