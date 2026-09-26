@@ -10,6 +10,7 @@ The MCP server supports the following tools:
 - Open or close tabs
 - Get the list of opened tabs
 - Create tab groups with name and color
+- Manage existing tab groups: list them, add/remove tabs, rename/recolor/collapse, and move groups
 - Reorder opened tabs
 - Read and search the browser's history
 - Read a webpage's text content and links (requires user consent)
