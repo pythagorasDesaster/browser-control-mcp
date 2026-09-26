@@ -42,6 +42,8 @@ describe("MessageHandler", () => {
         "get-tab-web-content": true,
         "reorder-browser-tabs": true,
         "find-highlight-in-browser-tab": true,
+        "list-tab-groups": true,
+        "manage-tab-groups": true,
       },
       domainDenyList: [],
       ports: [8089],
@@ -259,6 +261,90 @@ describe("MessageHandler", () => {
             { id: 789, url: "https://legacy.com", windowId: 1, groupId: null },
           ],
         });
+      });
+    });
+
+    describe("list-tab-groups command", () => {
+      const request: ServerMessageRequest = {
+        cmd: "list-tab-groups",
+        correlationId: "test-correlation-id",
+      };
+
+      it("should list tab groups with their tabs in tab-bar order", async () => {
+        // Arrange
+        const mockGroups = [
+          { id: 1, title: "Work", color: "blue", collapsed: false, windowId: 10 },
+          { id: 2, title: undefined, color: "grey", collapsed: true, windowId: 10 },
+        ];
+        const mockTabs = [
+          { id: 30, index: 2, groupId: 1 },
+          { id: 10, index: 0, groupId: 1 },
+          { id: 20, index: 1, groupId: 1 },
+          { id: 40, index: 3, groupId: 2 },
+          { id: 50, index: 4, groupId: -1 },
+        ];
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue(mockGroups);
+        (browser.tabs.query as jest.Mock).mockResolvedValue(mockTabs);
+
+        // Act
+        await messageHandler.handleDecodedMessage(request);
+
+        // Assert
+        expect(browser.tabGroups.query).toHaveBeenCalledWith({});
+        expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
+          resource: "tab-groups",
+          correlationId: "test-correlation-id",
+          tabGroups: [
+            {
+              id: 1,
+              title: "Work",
+              color: "blue",
+              collapsed: false,
+              windowId: 10,
+              tabIds: [10, 20, 30],
+            },
+            {
+              id: 2,
+              title: undefined,
+              color: "grey",
+              collapsed: true,
+              windowId: 10,
+              tabIds: [40],
+            },
+          ],
+        });
+      });
+
+      it("should return an empty list when there are no tab groups", async () => {
+        // Arrange
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([]);
+        (browser.tabs.query as jest.Mock).mockResolvedValue([]);
+
+        // Act
+        await messageHandler.handleDecodedMessage(request);
+
+        // Assert
+        expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
+          resource: "tab-groups",
+          correlationId: "test-correlation-id",
+          tabGroups: [],
+        });
+      });
+
+      it("should throw a clear error if the tabGroups API is unavailable", async () => {
+        // Arrange
+        const originalTabGroups = (browser as any).tabGroups;
+        (browser as any).tabGroups = undefined;
+
+        try {
+          // Act & Assert
+          await expect(
+            messageHandler.handleDecodedMessage(request)
+          ).rejects.toThrow(/requires Firefox 139 or later/);
+          expect(browser.tabs.query).not.toHaveBeenCalled();
+        } finally {
+          (browser as any).tabGroups = originalTabGroups;
+        }
       });
     });
 
@@ -556,6 +642,198 @@ describe("MessageHandler", () => {
           messageHandler.handleDecodedMessage(request)
         ).rejects.toThrow();
         expect(browser.find.find).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("add-tabs-to-group command", () => {
+      const request: ServerMessageRequest = {
+        cmd: "add-tabs-to-group",
+        tabIds: [10, 20],
+        groupId: 1,
+        correlationId: "test-correlation-id",
+      };
+
+      beforeEach(() => {
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([
+          { id: 1, color: "blue", collapsed: false, windowId: 10 },
+        ]);
+        (browser.tabs.query as jest.Mock).mockResolvedValue([
+          { id: 10 },
+          { id: 20 },
+        ]);
+      });
+
+      it("should add tabs to an existing group and confirm to the server", async () => {
+        // Act
+        await messageHandler.handleDecodedMessage(request);
+
+        // Assert
+        expect(browser.tabs.group).toHaveBeenCalledWith({
+          tabIds: [10, 20],
+          groupId: 1,
+        });
+        expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
+          resource: "tabs-added-to-group",
+          correlationId: "test-correlation-id",
+          groupId: 1,
+          tabIds: [10, 20],
+        });
+      });
+
+      it("should throw an error if the group does not exist", async () => {
+        // Arrange
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([]);
+
+        // Act & Assert
+        await expect(
+          messageHandler.handleDecodedMessage(request)
+        ).rejects.toThrow(/Tab group 1 does not exist/);
+        expect(browser.tabs.group).not.toHaveBeenCalled();
+      });
+
+      it("should throw an error if a tab id does not exist", async () => {
+        // Arrange
+        (browser.tabs.query as jest.Mock).mockResolvedValue([{ id: 10 }]);
+
+        // Act & Assert
+        await expect(
+          messageHandler.handleDecodedMessage(request)
+        ).rejects.toThrow(/Tab id\(s\) not found: 20/);
+        expect(browser.tabs.group).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("ungroup-tabs command", () => {
+      const request: ServerMessageRequest = {
+        cmd: "ungroup-tabs",
+        tabIds: [10, 20],
+        correlationId: "test-correlation-id",
+      };
+
+      it("should ungroup tabs and confirm to the server", async () => {
+        // Arrange
+        (browser.tabs.query as jest.Mock).mockResolvedValue([
+          { id: 10 },
+          { id: 20 },
+        ]);
+
+        // Act
+        await messageHandler.handleDecodedMessage(request);
+
+        // Assert
+        expect(browser.tabs.ungroup).toHaveBeenCalledWith([10, 20]);
+        expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
+          resource: "tabs-ungrouped",
+          correlationId: "test-correlation-id",
+        });
+      });
+
+      it("should throw an error if a tab id does not exist", async () => {
+        // Arrange
+        (browser.tabs.query as jest.Mock).mockResolvedValue([{ id: 10 }]);
+
+        // Act & Assert
+        await expect(
+          messageHandler.handleDecodedMessage(request)
+        ).rejects.toThrow(/Tab id\(s\) not found: 20/);
+        expect(browser.tabs.ungroup).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("update-tab-group command", () => {
+      const request: ServerMessageRequest = {
+        cmd: "update-tab-group",
+        groupId: 1,
+        title: "Work",
+        collapsed: true,
+        correlationId: "test-correlation-id",
+      };
+
+      it("should update the group and send the result to the server", async () => {
+        // Arrange
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([
+          { id: 1, color: "grey", collapsed: false, windowId: 10 },
+        ]);
+        (browser.tabGroups.update as jest.Mock).mockResolvedValue({
+          id: 1,
+          title: "Work",
+          color: "grey",
+          collapsed: true,
+          windowId: 10,
+        });
+
+        // Act
+        await messageHandler.handleDecodedMessage(request);
+
+        // Assert
+        expect(browser.tabGroups.update).toHaveBeenCalledWith(1, {
+          title: "Work",
+          collapsed: true,
+        });
+        expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
+          resource: "tab-group-updated",
+          correlationId: "test-correlation-id",
+          groupId: 1,
+          title: "Work",
+          color: "grey",
+          collapsed: true,
+        });
+      });
+
+      it("should throw an error if the group does not exist", async () => {
+        // Arrange
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([]);
+
+        // Act & Assert
+        await expect(
+          messageHandler.handleDecodedMessage(request)
+        ).rejects.toThrow(/Tab group 1 does not exist/);
+        expect(browser.tabGroups.update).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("move-tab-group command", () => {
+      const request: ServerMessageRequest = {
+        cmd: "move-tab-group",
+        groupId: 1,
+        index: 0,
+        correlationId: "test-correlation-id",
+      };
+
+      it("should move the group and confirm to the server", async () => {
+        // Arrange
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([
+          { id: 1, color: "grey", collapsed: false, windowId: 10 },
+        ]);
+        (browser.tabGroups.move as jest.Mock).mockResolvedValue({
+          id: 1,
+          color: "grey",
+          collapsed: false,
+          windowId: 10,
+        });
+
+        // Act
+        await messageHandler.handleDecodedMessage(request);
+
+        // Assert
+        expect(browser.tabGroups.move).toHaveBeenCalledWith(1, { index: 0 });
+        expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
+          resource: "tab-group-moved",
+          correlationId: "test-correlation-id",
+          groupId: 1,
+          index: 0,
+        });
+      });
+
+      it("should throw an error if the group does not exist", async () => {
+        // Arrange
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([]);
+
+        // Act & Assert
+        await expect(
+          messageHandler.handleDecodedMessage(request)
+        ).rejects.toThrow(/Tab group 1 does not exist/);
+        expect(browser.tabGroups.move).not.toHaveBeenCalled();
       });
     });
 

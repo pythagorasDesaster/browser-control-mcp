@@ -11,6 +11,7 @@ const mockBrowser = {
     move: jest.fn(),
     update: jest.fn(),
     group: jest.fn(),
+    ungroup: jest.fn(),
     captureVisibleTab: jest.fn(),
     onUpdated: { addListener: jest.fn() },
     onRemoved: { addListener: jest.fn() },
@@ -22,6 +23,8 @@ const mockBrowser = {
   },
   tabGroups: {
     update: jest.fn(),
+    query: jest.fn(),
+    move: jest.fn(),
   },
   history: {
     search: jest.fn(),
