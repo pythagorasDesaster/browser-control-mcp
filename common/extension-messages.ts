@@ -26,6 +26,21 @@ export interface TabsExtensionMessage extends ExtensionMessageBase {
   tabs: BrowserTab[];
 }
 
+export interface TabGroupInfo {
+  id: number;
+  title?: string;
+  color: string;
+  collapsed: boolean;
+  windowId: number;
+  // Tab ids in this group, in tab-bar order
+  tabIds: number[];
+}
+
+export interface TabGroupsExtensionMessage extends ExtensionMessageBase {
+  resource: "tab-groups";
+  tabGroups: TabGroupInfo[];
+}
+
 export interface OpenedTabIdExtensionMessage extends ExtensionMessageBase {
   resource: "opened-tab-id";
   tabId: number | undefined;
@@ -73,6 +88,7 @@ export interface ScreenshotExtensionMessage extends ExtensionMessageBase {
 export type ExtensionMessage =
   | TabContentExtensionMessage
   | TabsExtensionMessage
+  | TabGroupsExtensionMessage
   | OpenedTabIdExtensionMessage
   | BrowserHistoryExtensionMessage
   | ReorderedTabsExtensionMessage

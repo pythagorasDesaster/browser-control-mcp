@@ -89,6 +89,24 @@ mcpServer.tool(
 );
 
 mcpServer.tool(
+  "list-tab-groups",
+  "List the user's existing browser tab groups, including each group's id, title, color, collapsed state, window id, and the ids of the tabs currently in it (in tab-bar order). Call this first to find the groupId to pass to add-tabs-to-group.",
+  {},
+  async () => {
+    const tabGroups = await browserApi.listTabGroups();
+    if (tabGroups.length === 0) {
+      return { content: [{ type: "text", text: "No tab groups found." }] };
+    }
+    return {
+      content: tabGroups.map((group) => ({
+        type: "text" as const,
+        text: `group id=${group.id}, title=${group.title ?? "(untitled)"}, color=${group.color}, collapsed=${group.collapsed}, window id=${group.windowId}, tabs=[${group.tabIds.join(", ")}]`,
+      })),
+    };
+  }
+);
+
+mcpServer.tool(
   "get-recent-browser-history",
   "Get the list of recent browser history (to get all, don't use searchQuery)",
   { searchQuery: z.string().optional() },

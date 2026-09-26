@@ -8,6 +8,7 @@ import type {
   ServerMessageRequest,
   ExtensionError,
   ScreenshotExtensionMessage,
+  TabGroupInfo,
 } from "@browser-control-mcp/common";
 import { isPortInUse } from "./util";
 import * as crypto from "crypto";
@@ -124,6 +125,14 @@ export class BrowserAPI {
     });
     const message = await this.waitForResponse(correlationId, "tabs");
     return message.tabs;
+  }
+
+  async listTabGroups(): Promise<TabGroupInfo[]> {
+    const correlationId = this.sendMessageToExtension({
+      cmd: "list-tab-groups",
+    });
+    const message = await this.waitForResponse(correlationId, "tab-groups");
+    return message.tabGroups;
   }
 
   async getBrowserRecentHistory(

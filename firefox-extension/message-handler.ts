@@ -35,6 +35,9 @@ export class MessageHandler {
       case "get-tab-list":
         await this.sendTabs(req.correlationId);
         break;
+      case "list-tab-groups":
+        await this.listTabGroups(req.correlationId);
+        break;
       case "get-browser-recent-history":
         await this.sendRecentHistory(req.correlationId, req.searchQuery);
         break;
@@ -409,6 +412,60 @@ export class MessageHandler {
     await browser.tabs.update(tabId, { active: true });
     await new Promise((resolve) => setTimeout(resolve, TAB_PAINT_DELAY_MS));
     return previouslyActive?.id;
+  }
+
+  // The tabGroups API (and tabs.group/tabs.ungroup) require Firefox 139+. This checks
+  // the runtime object, not just the (hand-written) TypeScript types, so it also catches
+  // the API being genuinely missing on an older Firefox.
+  private assertTabGroupsApiAvailable(): void {
+    if (!browser.tabGroups) {
+      throw new Error(
+        "The browser.tabGroups API is not available in this Firefox version. Tab group management requires Firefox 139 or later."
+      );
+    }
+  }
+
+  private async listTabGroups(correlationId: string): Promise<void> {
+    this.assertTabGroupsApiAvailable();
+
+    const [groups, allTabs] = await Promise.all([
+      browser.tabGroups.query({}),
+      browser.tabs.query({}),
+    ]);
+
+    const tabsByGroupId = new Map<number, browser.tabs.Tab[]>();
+    for (const tab of allTabs) {
+      const groupId = (tab as { groupId?: number }).groupId;
+      if (groupId === undefined || groupId === TAB_GROUP_ID_NONE) {
+        continue;
+      }
+      const tabsInGroup = tabsByGroupId.get(groupId) ?? [];
+      tabsInGroup.push(tab);
+      tabsByGroupId.set(groupId, tabsInGroup);
+    }
+
+    const tabGroups = groups.map((group) => {
+      const tabIds = (tabsByGroupId.get(group.id) ?? [])
+        .slice()
+        .sort((a, b) => a.index - b.index)
+        .map((tab) => tab.id)
+        .filter((id): id is number => id !== undefined);
+
+      return {
+        id: group.id,
+        title: group.title,
+        color: group.color,
+        collapsed: group.collapsed,
+        windowId: group.windowId,
+        tabIds,
+      };
+    });
+
+    await this.client.sendResourceToServer({
+      resource: "tab-groups",
+      correlationId,
+      tabGroups,
+    });
   }
 
   private async groupTabs(

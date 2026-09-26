@@ -15,6 +15,10 @@ declare namespace browser.tabGroups {
 
   interface TabGroup {
     id: number;
+    title?: string;
+    color: Color;
+    collapsed: boolean;
+    windowId: number;
   }
 
   interface GroupUpdateProperties {
@@ -23,9 +27,27 @@ declare namespace browser.tabGroups {
     title?: string;
   }
 
+  interface GroupQueryInfo {
+    collapsed?: boolean;
+    color?: Color;
+    title?: string;
+    windowId?: number;
+  }
+
+  interface GroupMoveProperties {
+    index: number;
+  }
+
   function update(
     groupId: number,
     updateProperties: GroupUpdateProperties
+  ): Promise<TabGroup>;
+
+  function query(queryInfo: GroupQueryInfo): Promise<TabGroup[]>;
+
+  function move(
+    groupId: number,
+    moveProperties: GroupMoveProperties
   ): Promise<TabGroup>;
 }
 
