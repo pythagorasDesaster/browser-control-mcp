@@ -98,10 +98,17 @@ mcpServer.tool(
       return { content: [{ type: "text", text: "No tab groups found." }] };
     }
     return {
-      content: tabGroups.map((group) => ({
-        type: "text" as const,
-        text: `group id=${group.id}, title=${group.title ?? "(untitled)"}, color=${group.color}, collapsed=${group.collapsed}, window id=${group.windowId}, tabs=[${group.tabIds.join(", ")}]`,
-      })),
+      content: [
+        {
+          type: "text" as const,
+          text: tabGroups
+            .map(
+              (group) =>
+                `group id=${group.id}, title=${group.title ?? "(untitled)"}, color=${group.color}, collapsed=${group.collapsed}, window id=${group.windowId}, tabs=[${group.tabIds.join(", ")}]`
+            )
+            .join("\n"),
+        },
+      ],
     };
   }
 );
@@ -330,12 +337,16 @@ mcpServer.tool(
     index: z.number().int().min(-1),
   },
   async ({ groupId, index }) => {
-    await browserApi.moveTabGroup(groupId, index);
+    const result = await browserApi.moveTabGroup(groupId, index);
+    const range =
+      result.tabCount > 1
+        ? ` (tabs ${result.index}-${result.index + result.tabCount - 1})`
+        : "";
     return {
       content: [
         {
           type: "text",
-          text: `Moved tab group ${groupId} to index ${index}`,
+          text: `Moved tab group ${groupId} to index ${result.index}${range}`,
         },
       ],
     };

@@ -608,11 +608,20 @@ export class MessageHandler {
 
     await browser.tabGroups.move(groupId, { index });
 
+    // Firefox may clamp/adjust the requested index, so read back the group's
+    // actual resulting position instead of trusting the input.
+    const allTabs = await browser.tabs.query({});
+    const tabsInGroup = allTabs
+      .filter((tab) => (tab as { groupId?: number }).groupId === groupId)
+      .sort((a, b) => a.index - b.index);
+    const resultIndex = tabsInGroup[0]?.index ?? index;
+
     await this.client.sendResourceToServer({
       resource: "tab-group-moved",
       correlationId,
       groupId,
-      index,
+      index: resultIndex,
+      tabCount: tabsInGroup.length,
     });
   }
 }

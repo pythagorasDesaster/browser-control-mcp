@@ -800,8 +800,8 @@ describe("MessageHandler", () => {
         correlationId: "test-correlation-id",
       };
 
-      it("should move the group and confirm to the server", async () => {
-        // Arrange
+      it("should report the group's actual resulting index, not the requested one", async () => {
+        // Arrange: Firefox clamped the requested index 0 to 170 in this scenario
         (browser.tabGroups.query as jest.Mock).mockResolvedValue([
           { id: 1, color: "grey", collapsed: false, windowId: 10 },
         ]);
@@ -811,6 +811,12 @@ describe("MessageHandler", () => {
           collapsed: false,
           windowId: 10,
         });
+        (browser.tabs.query as jest.Mock).mockResolvedValue([
+          { id: 100, index: 171, groupId: 1 },
+          { id: 101, index: 170, groupId: 1 },
+          { id: 102, index: 172, groupId: 1 },
+          { id: 200, index: 5, groupId: 2 },
+        ]);
 
         // Act
         await messageHandler.handleDecodedMessage(request);
@@ -821,7 +827,44 @@ describe("MessageHandler", () => {
           resource: "tab-group-moved",
           correlationId: "test-correlation-id",
           groupId: 1,
-          index: 0,
+          index: 170,
+          tabCount: 3,
+        });
+      });
+
+      it("should report the actual resulting index when moving to the end (index -1)", async () => {
+        // Arrange
+        const moveToEndRequest: ServerMessageRequest = {
+          cmd: "move-tab-group",
+          groupId: 1,
+          index: -1,
+          correlationId: "test-correlation-id",
+        };
+        (browser.tabGroups.query as jest.Mock).mockResolvedValue([
+          { id: 1, color: "grey", collapsed: false, windowId: 10 },
+        ]);
+        (browser.tabGroups.move as jest.Mock).mockResolvedValue({
+          id: 1,
+          color: "grey",
+          collapsed: false,
+          windowId: 10,
+        });
+        (browser.tabs.query as jest.Mock).mockResolvedValue([
+          { id: 100, index: 8, groupId: 1 },
+          { id: 101, index: 9, groupId: 1 },
+        ]);
+
+        // Act
+        await messageHandler.handleDecodedMessage(moveToEndRequest);
+
+        // Assert
+        expect(browser.tabGroups.move).toHaveBeenCalledWith(1, { index: -1 });
+        expect(mockClient.sendResourceToServer).toHaveBeenCalledWith({
+          resource: "tab-group-moved",
+          correlationId: "test-correlation-id",
+          groupId: 1,
+          index: 8,
+          tabCount: 2,
         });
       });
 

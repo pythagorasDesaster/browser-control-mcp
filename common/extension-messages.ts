@@ -98,7 +98,10 @@ export interface TabGroupUpdatedExtensionMessage extends ExtensionMessageBase {
 export interface TabGroupMovedExtensionMessage extends ExtensionMessageBase {
   resource: "tab-group-moved";
   groupId: number;
+  // The actual index of the group's first tab after the move (Firefox may clamp
+  // the requested index), not the index that was requested.
   index: number;
+  tabCount: number;
 }
 
 export interface ScreenshotExtensionMessage extends ExtensionMessageBase {

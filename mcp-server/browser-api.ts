@@ -10,6 +10,7 @@ import type {
   ScreenshotExtensionMessage,
   TabGroupInfo,
   TabGroupUpdatedExtensionMessage,
+  TabGroupMovedExtensionMessage,
 } from "@browser-control-mcp/common";
 import { isPortInUse } from "./util";
 import * as crypto from "crypto";
@@ -231,13 +232,16 @@ export class BrowserAPI {
     return await this.waitForResponse(correlationId, "tab-group-updated");
   }
 
-  async moveTabGroup(groupId: number, index: number): Promise<void> {
+  async moveTabGroup(
+    groupId: number,
+    index: number
+  ): Promise<TabGroupMovedExtensionMessage> {
     const correlationId = this.sendMessageToExtension({
       cmd: "move-tab-group",
       groupId,
       index,
     });
-    await this.waitForResponse(correlationId, "tab-group-moved");
+    return await this.waitForResponse(correlationId, "tab-group-moved");
   }
 
   async captureScreenshot(
