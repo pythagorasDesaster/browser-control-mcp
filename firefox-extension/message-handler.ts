@@ -69,6 +69,18 @@ export class MessageHandler {
       case "ungroup-tabs":
         await this.ungroupTabs(req.correlationId, req.tabIds);
         break;
+      case "update-tab-group":
+        await this.updateTabGroup(
+          req.correlationId,
+          req.groupId,
+          req.title,
+          req.color as browser.tabGroups.Color | undefined,
+          req.collapsed
+        );
+        break;
+      case "move-tab-group":
+        await this.moveTabGroup(req.correlationId, req.groupId, req.index);
+        break;
       case "capture-screenshot":
         await this.captureScreenshot(
           req.correlationId,
@@ -547,6 +559,60 @@ export class MessageHandler {
     await this.client.sendResourceToServer({
       resource: "tabs-ungrouped",
       correlationId,
+    });
+  }
+
+  private async updateTabGroup(
+    correlationId: string,
+    groupId: number,
+    title: string | undefined,
+    color: browser.tabGroups.Color | undefined,
+    collapsed: boolean | undefined
+  ): Promise<void> {
+    this.assertTabGroupsApiAvailable();
+    await this.assertGroupExists(groupId);
+
+    const updateProperties: browser.tabGroups.GroupUpdateProperties = {};
+    if (title !== undefined) {
+      updateProperties.title = title;
+    }
+    if (color !== undefined) {
+      updateProperties.color = color;
+    }
+    if (collapsed !== undefined) {
+      updateProperties.collapsed = collapsed;
+    }
+
+    const updatedGroup = await browser.tabGroups.update(
+      groupId,
+      updateProperties
+    );
+
+    await this.client.sendResourceToServer({
+      resource: "tab-group-updated",
+      correlationId,
+      groupId: updatedGroup.id,
+      title: updatedGroup.title,
+      color: updatedGroup.color,
+      collapsed: updatedGroup.collapsed,
+    });
+  }
+
+  private async moveTabGroup(
+    correlationId: string,
+    groupId: number,
+    index: number
+  ): Promise<void> {
+    this.assertTabGroupsApiAvailable();
+    await this.assertGroupExists(groupId);
+
+    await browser.tabGroups.move(groupId, { index });
+
+    await this.client.sendResourceToServer({
+      resource: "tab-group-moved",
+      correlationId,
+      groupId,
+      index,
     });
   }
 }

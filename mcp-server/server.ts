@@ -284,6 +284,65 @@ mcpServer.tool(
 );
 
 mcpServer.tool(
+  "update-tab-group",
+  "Update an existing tab group's title, color and/or collapsed state, without changing its tabs. Only the fields you provide are changed; omitted fields are left as they are.",
+  {
+    groupId: z.number(),
+    title: z.string().optional(),
+    color: z
+      .enum([
+        "grey",
+        "blue",
+        "red",
+        "yellow",
+        "green",
+        "pink",
+        "purple",
+        "cyan",
+        "orange",
+      ])
+      .optional(),
+    collapsed: z.boolean().optional(),
+  },
+  async ({ groupId, title, color, collapsed }) => {
+    const updatedGroup = await browserApi.updateTabGroup(
+      groupId,
+      title,
+      color,
+      collapsed
+    );
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Updated tab group ${updatedGroup.groupId}: title="${updatedGroup.title}", color=${updatedGroup.color}, collapsed=${updatedGroup.collapsed}`,
+        },
+      ],
+    };
+  }
+);
+
+mcpServer.tool(
+  "move-tab-group",
+  "Move an existing tab group (and all its tabs) to a new position in the tab bar. Use index -1 to move it to the end.",
+  {
+    groupId: z.number(),
+    index: z.number().int().min(-1),
+  },
+  async ({ groupId, index }) => {
+    await browserApi.moveTabGroup(groupId, index);
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Moved tab group ${groupId} to index ${index}`,
+        },
+      ],
+    };
+  }
+);
+
+mcpServer.tool(
   "capture-tab-screenshot",
   `
     Capture a screenshot of the visible area of a browser tab, by tab ID.

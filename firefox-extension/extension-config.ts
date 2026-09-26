@@ -80,6 +80,8 @@ export const COMMAND_TO_TOOL_ID: Record<ServerMessageRequest["cmd"], string> = {
   "group-tabs": "reorder-browser-tabs",
   "add-tabs-to-group": "manage-tab-groups",
   "ungroup-tabs": "manage-tab-groups",
+  "update-tab-group": "manage-tab-groups",
+  "move-tab-group": "manage-tab-groups",
   "capture-screenshot": "capture-tab-screenshot",
 };
 

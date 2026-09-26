@@ -9,6 +9,7 @@ import type {
   ExtensionError,
   ScreenshotExtensionMessage,
   TabGroupInfo,
+  TabGroupUpdatedExtensionMessage,
 } from "@browser-control-mcp/common";
 import { isPortInUse } from "./util";
 import * as crypto from "crypto";
@@ -212,6 +213,31 @@ export class BrowserAPI {
       tabIds,
     });
     await this.waitForResponse(correlationId, "tabs-ungrouped");
+  }
+
+  async updateTabGroup(
+    groupId: number,
+    title?: string,
+    color?: string,
+    collapsed?: boolean
+  ): Promise<TabGroupUpdatedExtensionMessage> {
+    const correlationId = this.sendMessageToExtension({
+      cmd: "update-tab-group",
+      groupId,
+      title,
+      color,
+      collapsed,
+    });
+    return await this.waitForResponse(correlationId, "tab-group-updated");
+  }
+
+  async moveTabGroup(groupId: number, index: number): Promise<void> {
+    const correlationId = this.sendMessageToExtension({
+      cmd: "move-tab-group",
+      groupId,
+      index,
+    });
+    await this.waitForResponse(correlationId, "tab-group-moved");
   }
 
   async captureScreenshot(

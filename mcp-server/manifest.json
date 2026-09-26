@@ -92,6 +92,14 @@
             "description": "Remove browser tabs from their tab group"
         },
         {
+            "name": "update-tab-group",
+            "description": "Update an existing tab group's title, color or collapsed state"
+        },
+        {
+            "name": "move-tab-group",
+            "description": "Move an existing tab group to a new position in the tab bar"
+        },
+        {
             "name": "find-highlight-in-browser-tab",
             "description": "Find and highlight text in a browser tab"
         },

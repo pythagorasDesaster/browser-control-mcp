@@ -61,6 +61,20 @@ export interface UngroupTabsServerMessage extends ServerMessageBase {
   tabIds: number[];
 }
 
+export interface UpdateTabGroupServerMessage extends ServerMessageBase {
+  cmd: "update-tab-group";
+  groupId: number;
+  title?: string;
+  color?: string;
+  collapsed?: boolean;
+}
+
+export interface MoveTabGroupServerMessage extends ServerMessageBase {
+  cmd: "move-tab-group";
+  groupId: number;
+  index: number;
+}
+
 export interface CaptureScreenshotServerMessage extends ServerMessageBase {
   cmd: "capture-screenshot";
   tabId: number;
@@ -81,6 +95,8 @@ export type ServerMessage =
   | GroupTabsServerMessage
   | AddTabsToGroupServerMessage
   | UngroupTabsServerMessage
+  | UpdateTabGroupServerMessage
+  | MoveTabGroupServerMessage
   | CaptureScreenshotServerMessage;
 
 export type ServerMessageRequest = ServerMessage & { correlationId: string };

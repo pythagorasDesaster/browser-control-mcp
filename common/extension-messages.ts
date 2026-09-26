@@ -87,6 +87,20 @@ export interface TabsUngroupedExtensionMessage extends ExtensionMessageBase {
   resource: "tabs-ungrouped";
 }
 
+export interface TabGroupUpdatedExtensionMessage extends ExtensionMessageBase {
+  resource: "tab-group-updated";
+  groupId: number;
+  title?: string;
+  color: string;
+  collapsed: boolean;
+}
+
+export interface TabGroupMovedExtensionMessage extends ExtensionMessageBase {
+  resource: "tab-group-moved";
+  groupId: number;
+  index: number;
+}
+
 export interface ScreenshotExtensionMessage extends ExtensionMessageBase {
   resource: "screenshot";
   tabId: number;
@@ -107,6 +121,8 @@ export type ExtensionMessage =
   | TabGroupCreatedExtensionMessage
   | TabsAddedToGroupExtensionMessage
   | TabsUngroupedExtensionMessage
+  | TabGroupUpdatedExtensionMessage
+  | TabGroupMovedExtensionMessage
   | ScreenshotExtensionMessage;
 
 export interface ExtensionError {
